@@ -163,6 +163,118 @@ folium.LayerControl(
 ).add_to(m)
 
 
+# select all checkbox
+
+select_all_html = """
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // Wait for Folium's layer control to appear
+    setTimeout(function() {
+
+        const layerControl = document.querySelector(
+            '.leaflet-control-layers-list'
+        );
+
+        if (!layerControl) {
+            return;
+        }
+
+        // Create Select All container
+        const container = document.createElement("div");
+
+        container.style.padding = "5px 0";
+        container.style.borderBottom = "1px solid #ccc";
+        container.style.marginBottom = "5px";
+
+        // Create checkbox
+        const checkbox = document.createElement("input");
+
+        checkbox.type = "checkbox";
+        checkbox.id = "select-all-ssid";
+        checkbox.checked = true;
+
+        // Create label
+        const label = document.createElement("label");
+
+        label.htmlFor = "select-all-ssid";
+        label.innerText = " Select All";
+        label.style.fontWeight = "bold";
+        label.style.cursor = "pointer";
+
+        container.appendChild(checkbox);
+        container.appendChild(label);
+
+        // Put it at the top of the layer list
+        layerControl.insertBefore(
+            container,
+            layerControl.firstChild
+        );
+
+
+        // --------------------------------------------------
+        // SELECT / DESELECT ALL
+        // --------------------------------------------------
+
+        checkbox.addEventListener("change", function() {
+
+            const layerInputs = layerControl.querySelectorAll(
+                'input[type="checkbox"]:not(#select-all-ssid)'
+            );
+
+            layerInputs.forEach(function(input) {
+
+                if (input.checked !== checkbox.checked) {
+                    input.click();
+                }
+
+            });
+
+        });
+
+
+        // --------------------------------------------------
+        // UPDATE SELECT ALL STATE
+        // --------------------------------------------------
+
+        const layerInputs = layerControl.querySelectorAll(
+            'input[type="checkbox"]:not(#select-all-ssid)'
+        );
+
+        layerInputs.forEach(function(input) {
+
+            input.addEventListener("change", function() {
+
+                const allSelected = Array.from(layerInputs)
+                    .every(function(input) {
+                        return input.checked;
+                    });
+
+                const noneSelected = Array.from(layerInputs)
+                    .every(function(input) {
+                        return !input.checked;
+                    });
+
+                checkbox.checked = allSelected;
+                checkbox.indeterminate =
+                    !allSelected && !noneSelected;
+
+            });
+
+        });
+
+    }, 500);
+
+});
+</script>
+"""
+
+from branca.element import Element
+
+m.get_root().html.add_child(
+    Element(select_all_html)
+)
+
 m.save("wifi_points.html")
 
 print("Map created successfully!")
