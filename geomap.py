@@ -118,6 +118,14 @@ for ssid in sorted(df["SSID"].unique()):
 
     ssid_layers[ssid].add_to(m)
 
+import json
+
+map_var_name = m.get_name()
+
+# Order must match the order checkboxes appear in the control
+sorted_ssids = sorted(df["SSID"].unique())
+layer_var_names = [ssid_layers[ssid].get_name() for ssid in sorted_ssids]
+layer_var_names_json = json.dumps(layer_var_names)
 
 # add measurement points
 
@@ -164,39 +172,35 @@ folium.LayerControl(
 
 
 # select all checkbox
-
-select_all_html = """
+select_all_html = f"""
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {{
 
-    // Wait for Folium's layer control to appear
-    setTimeout(function() {
+    setTimeout(function() {{
 
         const layerControl = document.querySelector(
             '.leaflet-control-layers-list'
         );
 
-        if (!layerControl) {
+        if (!layerControl) {{
             return;
-        }
+        }}
+
+        const mapObj = window["{map_var_name}"];
+        const layerVars = {layer_var_names_json};
 
         // Create Select All container
         const container = document.createElement("div");
-
         container.style.padding = "5px 0";
         container.style.borderBottom = "1px solid #ccc";
         container.style.marginBottom = "5px";
 
-        // Create checkbox
         const checkbox = document.createElement("input");
-
         checkbox.type = "checkbox";
         checkbox.id = "select-all-ssid";
         checkbox.checked = true;
 
-        // Create label
         const label = document.createElement("label");
-
         label.htmlFor = "select-all-ssid";
         label.innerText = " Select All";
         label.style.fontWeight = "bold";
@@ -204,68 +208,54 @@ document.addEventListener("DOMContentLoaded", function() {
 
         container.appendChild(checkbox);
         container.appendChild(label);
-
-        // Put it at the top of the layer list
-        layerControl.insertBefore(
-            container,
-            layerControl.firstChild
-        );
-
-
-        // --------------------------------------------------
-        // SELECT / DESELECT ALL
-        // --------------------------------------------------
-
-        checkbox.addEventListener("change", function() {
-
-            const layerInputs = layerControl.querySelectorAll(
-                'input[type="checkbox"]:not(#select-all-ssid)'
-            );
-
-            layerInputs.forEach(function(input) {
-
-                if (input.checked !== checkbox.checked) {
-                    input.click();
-                }
-
-            });
-
-        });
-
-
-        // --------------------------------------------------
-        // UPDATE SELECT ALL STATE
-        // --------------------------------------------------
+        layerControl.insertBefore(container, layerControl.firstChild);
 
         const layerInputs = layerControl.querySelectorAll(
             'input[type="checkbox"]:not(#select-all-ssid)'
         );
 
-        layerInputs.forEach(function(input) {
+        // --------------------------------------------------
+        // SELECT / DESELECT ALL 
+        // --------------------------------------------------
+        checkbox.addEventListener("change", function() {{
+            layerInputs.forEach(function(input, idx) {{
+                const layer = window[layerVars[idx]];
+                if (!layer || !mapObj) return;
 
-            input.addEventListener("change", function() {
+                input.checked = checkbox.checked;
 
-                const allSelected = Array.from(layerInputs)
-                    .every(function(input) {
-                        return input.checked;
-                    });
+                if (checkbox.checked) {{
+                    if (!mapObj.hasLayer(layer)) {{
+                        mapObj.addLayer(layer);
+                    }}
+                }} else {{
+                    if (mapObj.hasLayer(layer)) {{
+                        mapObj.removeLayer(layer);
+                    }}
+                }}
+            }});
+        }});
 
-                const noneSelected = Array.from(layerInputs)
-                    .every(function(input) {
-                        return !input.checked;
-                    });
+        // --------------------------------------------------
+        // UPDATE SELECT ALL STATE when individual boxes change
+        // --------------------------------------------------
+        layerInputs.forEach(function(input) {{
+            input.addEventListener("change", function() {{
+                const allSelected = Array.from(layerInputs).every(
+                    (i) => i.checked
+                );
+                const noneSelected = Array.from(layerInputs).every(
+                    (i) => !i.checked
+                );
 
                 checkbox.checked = allSelected;
-                checkbox.indeterminate =
-                    !allSelected && !noneSelected;
+                checkbox.indeterminate = !allSelected && !noneSelected;
+            }});
+        }});
 
-            });
+    }}, 500);
 
-        });
-
-    }, 500);
-
-});
+}});
 </script>
 """
 
