@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+.Python
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Generated map outputs (these are build artifacts, not source)
+wifi_map.html
+wifi_points.html
+wifi_heatmap.html
+*.html
+
+# Jupyter, if you use notebooks for exploration
+.ipynb_checkpoints/
+*.ipynb
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Env vars / secrets, if you ever add API keys or sheet IDs there
+.env
