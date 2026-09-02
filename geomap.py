@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import pandas as pd
 import folium
-from ssid_filter import filter_by_ssid
 
 
 url = "https://docs.google.com/spreadsheets/d/1pHg-lgImRUUAHPI8eXAPXVKCM5IDRqp6lhoZE0FLwgg/export?format=csv&gid=0"
@@ -72,13 +71,7 @@ for ssid, ssid_df in df.groupby("SSID"):
 
 df = pd.DataFrame(grouped_data)
 
-# Select SSIDs to display
-selected_ssids = [
-    "vivo T2x 5G",
-    "pupu"
-]
-
-df = filter_by_ssid(df, selected_ssids)
+# create map
 
 center_lat = df["Latitude"].mean()
 center_lon = df["Longitude"].mean()
@@ -111,6 +104,21 @@ def rssi_color(rssi):
         return "darkred"
 
 
+# create a layer for each SSID
+
+ssid_layers = {}
+
+
+for ssid in sorted(df["SSID"].unique()):
+
+    ssid_layers[ssid] = folium.FeatureGroup(
+        name=ssid,
+        show=True
+    )
+
+    ssid_layers[ssid].add_to(m)
+
+
 # add measurement points
 
 for _, row in df.iterrows():
@@ -118,6 +126,7 @@ for _, row in df.iterrows():
     lat = row["Latitude"]
     lon = row["Longitude"]
     rssi = row["RSSI_dBm"]
+    ssid = row["SSID"]
 
     # Information shown when clicking a point
     popup_text = f"""
@@ -144,7 +153,14 @@ for _, row in df.iterrows():
             popup_text,
             max_width=300
         )
-    ).add_to(m)
+    ).add_to(ssid_layers[ssid])
+
+
+# ssid filter control
+
+folium.LayerControl(
+    collapsed=False
+).add_to(m)
 
 
 m.save("wifi_points.html")
