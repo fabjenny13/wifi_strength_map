@@ -1,3 +1,5 @@
+import numpy as np
+from sklearn.cluster import DBSCAN
 import pandas as pd
 import folium
 
@@ -14,20 +16,60 @@ df = df.dropna(
     subset=["Latitude", "Longitude", "RSSI_dBm"]
 )
 
-df = (
-    df.groupby(
-        ["Latitude", "Longitude", "SSID"],
-        as_index=False
+
+# group nearby measurements
+DISTANCE_THRESHOLD = 3  # meters
+
+earth_radius = 6371000
+
+grouped_data = []
+
+
+for ssid, ssid_df in df.groupby("SSID"):
+
+    coords = np.radians(
+        ssid_df[["Latitude", "Longitude"]].values
     )
-    .agg({
-        "RSSI_dBm": "median",
-        "Channel": "first",
-        "Encryption": "first",
-        "SignalQuality": "first",
-        "Altitude": "first",
-        "Timestamp": "first"
-    })
-)
+
+    db = DBSCAN(
+        eps=DISTANCE_THRESHOLD / earth_radius,
+        min_samples=1,
+        metric="haversine"
+    )
+
+    labels = db.fit_predict(coords)
+
+    ssid_df = ssid_df.copy()
+    ssid_df["cluster"] = labels
+
+
+    for cluster_id, cluster in ssid_df.groupby("cluster"):
+
+        grouped_data.append({
+
+            "Latitude": cluster["Latitude"].mean(),
+
+            "Longitude": cluster["Longitude"].mean(),
+
+            "SSID": ssid,
+
+            "RSSI_dBm": cluster["RSSI_dBm"].median(),
+
+            "Channel": cluster["Channel"].mode().iloc[0],
+
+            "Encryption": cluster["Encryption"].mode().iloc[0],
+
+            "SignalQuality": cluster["SignalQuality"].mode().iloc[0],
+
+            "Altitude": cluster["Altitude"].mean(),
+
+            "Measurements": len(cluster),
+
+            "Timestamp": cluster["Timestamp"].iloc[0]
+        })
+
+
+df = pd.DataFrame(grouped_data)
 
 center_lat = df["Latitude"].mean()
 center_lon = df["Longitude"].mean()
