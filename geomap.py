@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import pandas as pd
 import folium
+from ssid_filter import filter_by_ssid
 
 
 url = "https://docs.google.com/spreadsheets/d/1pHg-lgImRUUAHPI8eXAPXVKCM5IDRqp6lhoZE0FLwgg/export?format=csv&gid=0"
@@ -70,6 +71,14 @@ for ssid, ssid_df in df.groupby("SSID"):
 
 
 df = pd.DataFrame(grouped_data)
+
+# Select SSIDs to display
+selected_ssids = [
+    "vivo T2x 5G",
+    "pupu"
+]
+
+df = filter_by_ssid(df, selected_ssids)
 
 center_lat = df["Latitude"].mean()
 center_lon = df["Longitude"].mean()
