@@ -1,0 +1,102 @@
+import pandas as pd
+import folium
+
+
+url = "https://docs.google.com/spreadsheets/d/1pHg-lgImRUUAHPI8eXAPXVKCM5IDRqp6lhoZE0FLwgg/export?format=csv&gid=0"
+
+df = pd.read_csv(url)
+
+print(df.head())
+
+
+# Remove rows where GPS or RSSI is missing
+df = df.dropna(
+    subset=["Latitude", "Longitude", "RSSI_dBm"]
+)
+
+df = (
+    df.groupby(
+        ["Latitude", "Longitude", "SSID"],
+        as_index=False
+    )
+    .agg({
+        "RSSI_dBm": "median",
+        "Channel": "first",
+        "Encryption": "first",
+        "SignalQuality": "first",
+        "Altitude": "first",
+        "Timestamp": "first"
+    })
+)
+
+center_lat = df["Latitude"].mean()
+center_lon = df["Longitude"].mean()
+
+
+m = folium.Map(
+    location=[center_lat, center_lon],
+    zoom_start=18,
+    tiles="OpenStreetMap"
+)
+
+
+# determine point color based on RSSI value
+
+def rssi_color(rssi):
+
+    if rssi >= -50:
+        return "green"
+
+    elif rssi >= -60:
+        return "lightgreen"
+
+    elif rssi >= -70:
+        return "orange"
+
+    elif rssi >= -80:
+        return "red"
+
+    else:
+        return "darkred"
+
+
+# add measurement points
+
+for _, row in df.iterrows():
+
+    lat = row["Latitude"]
+    lon = row["Longitude"]
+    rssi = row["RSSI_dBm"]
+
+    # Information shown when clicking a point
+    popup_text = f"""
+    <b>SSID:</b> {row["SSID"]}<br>
+    <b>RSSI:</b> {rssi} dBm<br>
+    <b>Channel:</b> {row["Channel"]}<br>
+    <b>Encryption:</b> {row["Encryption"]}<br>
+    <b>Signal Quality:</b> {row["SignalQuality"]}<br>
+    <b>Latitude:</b> {lat}<br>
+    <b>Longitude:</b> {lon}<br>
+    <b>Altitude:</b> {row["Altitude"]} m<br>
+    <b>Timestamp:</b> {row["Timestamp"]}
+    """
+
+    folium.CircleMarker(
+        location=[lat, lon],
+        radius=6,
+        color="black",
+        weight=1,
+        fill=True,
+        fill_color=rssi_color(rssi),
+        fill_opacity=0.8,
+        popup=folium.Popup(
+            popup_text,
+            max_width=300
+        )
+    ).add_to(m)
+
+
+m.save("wifi_points.html")
+
+print("Map created successfully!")
+print("Open wifi_points.html in your browser.")
