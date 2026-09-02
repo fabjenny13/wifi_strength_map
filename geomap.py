@@ -83,6 +83,13 @@ m = folium.Map(
     tiles="OpenStreetMap"
 )
 
+folium.TileLayer(
+    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attr="Esri, Maxar, Earthstar Geographics",
+    name="Satellite",
+    overlay=False,
+    control=True
+).add_to(m)
 
 # determine point color based on RSSI value
 
